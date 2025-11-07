@@ -95,23 +95,44 @@ export const mapSheetRowToLead = (row: Record<string, string>) => {
   return mapped;
 };
 
-export const fetchGoogleSheetLeads = async (sheetUrl: string) => {
+export const fetchGoogleSheetLeads = async (sheetUrl: string, gid: number = 0) => {
   try {
-    // Extract sheetId
-    const m = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)\/edit/);
+    const m = sheetUrl.match(/\/d\/([a-zA-Z0-9-_]+)/);
     const sheetId = m ? m[1] : null;
     if (!sheetId) throw new Error('Invalid Google Sheet URL');
 
-    // default to first sheet gid=0
-    const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=0`;
-    const resp = await fetch(exportUrl);
-    if (!resp.ok) throw new Error('Failed to fetch sheet CSV');
-    const csv = await resp.text();
+    const pubUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/pub?output=csv&gid=${gid}`;
+    const exportUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+
+    const tryFetch = async (url: string) => {
+      const resp = await fetch(url, { mode: 'cors', credentials: 'omit' });
+      if (!resp.ok) throw new Error(`Failed to fetch sheet CSV: ${resp.status} ${resp.statusText}`);
+      const text = await resp.text();
+      // if the response is HTML (login page or error), treat as failure
+      if (text.trim().startsWith('<')) throw new Error('Received HTML instead of CSV. Make sure the sheet is published to web and publicly accessible.');
+      return text;
+    };
+
+    let csv: string | null = null;
+
+    try {
+      csv = await tryFetch(pubUrl);
+    } catch (err) {
+      // fallback to export url
+      try {
+        csv = await tryFetch(exportUrl);
+      } catch (err2) {
+        throw new Error(`Failed to fetch Google Sheet CSV. Ensure the sheet is public or published to web. (${(err2 as Error).message})`);
+      }
+    }
+
+    if (!csv) throw new Error('Empty CSV');
+
     const rows = parseCsv(csv);
     const leads = rows.map(mapSheetRowToLead);
     return leads;
   } catch (error) {
     console.error('fetchGoogleSheetLeads error:', error);
-    return [];
+    throw error;
   }
 };
