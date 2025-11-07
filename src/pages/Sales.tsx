@@ -627,11 +627,12 @@ const Sales: React.FC = () => {
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {leads.slice(0,6).map((lead) => {
+                    {leads.slice(0,6).map((lead, __idx) => {
                       const pipeline = getPipeline(lead.id);
                       const stage = getStage(pipeline?.current_stage_id);
+                      const _key = lead.id || `${lead.customer_email || lead.customer_phone || 'lead'}-${__idx}`;
                       return (
-                        <Tr key={lead.id}>
+                        <Tr key={_key}>
                           <Td fontWeight="medium">{lead.customer_name}</Td>
                           <Td>{lead.customer_phone || '—'}</Td>
                           <Td>{stage ? <Badge colorScheme="green">{stage.name}</Badge> : '—'}</Td>
