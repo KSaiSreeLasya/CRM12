@@ -224,6 +224,29 @@ const Sales: React.FC = () => {
             if (existing) {
               // update existing in place
               Object.assign(existing, s);
+
+              // schedule update to supabase for matched row (allowed fields only)
+              (async () => {
+                try {
+                  if (isSupabaseConfigured && existing.id) {
+                    const updatePayload: any = {};
+                    if (s.customer_name) updatePayload.customer_name = s.customer_name;
+                    if (s.customer_phone || s.phone) updatePayload.customer_phone = s.customer_phone || s.phone;
+                    if (s.customer_email || s.email) updatePayload.customer_email = s.customer_email || s.email;
+                    if (s.location) updatePayload.location = s.location;
+                    if (s.source || s.source_id) updatePayload.source_id = s.source || s.source_id;
+                    if (s.assigned_to) updatePayload.assigned_to = s.assigned_to;
+                    if (s.status) updatePayload.status = s.status;
+
+                    const keys = Object.keys(updatePayload);
+                    if (keys.length > 0) {
+                      await supabase.from('leads').update(updatePayload).eq('id', existing.id);
+                    }
+                  }
+                } catch (err) {
+                  console.warn('Failed to update matched sheet lead to supabase', err);
+                }
+              })();
             } else {
               // new lead: create minimal Lead object
               const newLead: any = {
@@ -237,16 +260,6 @@ const Sales: React.FC = () => {
                 status: s.status || 'new',
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
-                // preserve any extra fields
-                external: (() => {
-                  const extras: Record<string, any> = {};
-                  for (const k of Object.keys(s)) {
-                    if (!['id','customer_name','name','customer_phone','phone','customer_email','email','location','source','source_id','assigned_to','status','created_at','updated_at'].includes(k)) {
-                      extras[k] = s[k];
-                    }
-                  }
-                  return Object.keys(extras).length ? extras : undefined;
-                })(),
               };
 
               newLeads.unshift(newLead);
@@ -264,14 +277,12 @@ const Sales: React.FC = () => {
                       assigned_to: newLead.assigned_to,
                       status: newLead.status,
                     };
-                    // include external as json if table supports it
-                    if (newLead.external) insertPayload.external = newLead.external;
 
                     const { data, error } = await supabase.from('leads').insert([insertPayload]).select();
                     if (!error && data && data.length > 0) {
                       // replace temporary lead with persisted row
                       const persisted = data[0];
-                      newLeads[ newLeads.findIndex((l) => l === newLead) ] = persisted;
+                      newLeads[newLeads.findIndex((l) => l === newLead)] = persisted;
                     }
                   }
                 } catch (err) {
