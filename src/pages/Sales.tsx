@@ -641,6 +641,8 @@ const Sales: React.FC = () => {
                     {leads.slice(0,6).map((lead, __idx) => {
                       const pipeline = getPipeline(lead.id);
                       const stage = getStage(pipeline?.current_stage_id);
+                      const sourceObj = getSource(lead.source_id) || (lead.source && typeof lead.source !== 'string' ? lead.source : undefined);
+                      const sourceText: string = sourceObj ? `${(sourceObj as LeadSource).icon} ${(sourceObj as LeadSource).name}` : (typeof lead.source === 'string' && lead.source) ? lead.source : (lead.source_id ? String(lead.source_id) : '—');
                       const _key = lead.id || `${lead.customer_email || lead.customer_phone || 'lead'}-${__idx}`;
                       return (
                         <Tr key={_key}>
