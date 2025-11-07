@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Badge,
   Box,
   Button,
   Flex,
@@ -8,26 +7,8 @@ import {
   HStack,
   LinkBox,
   LinkOverlay,
-  SimpleGrid,
-  Spinner,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
   useToast,
-  VStack,
-  Card,
-  CardBody,
   Text,
-  Avatar,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
