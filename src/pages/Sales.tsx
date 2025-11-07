@@ -938,24 +938,27 @@ const Sales: React.FC = () => {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {leads.map((lead) => (
-                    <Tr key={lead.id}>
-                      <Td fontWeight="medium">{lead.customer_name}</Td>
-                      <Td>
-                        <Select
-                          value={lead.assigned_to || ''}
-                          placeholder="Select sales person"
-                          onChange={(e) => handleAssignLead(lead.id, e.target.value)}
-                        >
-                          {salesPersons.map((person) => (
-                            <option key={person.id} value={person.id}>
-                              {person.name}
-                            </option>
-                          ))}
-                        </Select>
-                      </Td>
-                    </Tr>
-                  ))}
+                  {leads.map((lead, __idx) => {
+                    const _key = lead.id || `${lead.customer_email || lead.customer_phone || 'lead'}-${__idx}`;
+                    return (
+                      <Tr key={_key}>
+                        <Td fontWeight="medium">{lead.customer_name}</Td>
+                        <Td>
+                          <Select
+                            value={lead.assigned_to || ''}
+                            placeholder="Select sales person"
+                            onChange={(e) => handleAssignLead(lead.id, e.target.value)}
+                          >
+                            {salesPersons.map((person) => (
+                              <option key={person.id} value={person.id}>
+                                {person.name}
+                              </option>
+                            ))}
+                          </Select>
+                        </Td>
+                      </Tr>
+                    );
+                  })}
                 </Tbody>
               </Table>
             </TableContainer>
