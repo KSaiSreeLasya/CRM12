@@ -1228,8 +1228,8 @@ const Sales: React.FC = () => {
                   <Text fontWeight="medium">{selectedLead.location || '—'}</Text>
                 </Box>
                 {(() => {
-                  const sourceObj = getSource(selectedLead.source_id);
-                  const sourceText = sourceObj ? `${sourceObj.icon} ${sourceObj.name}` : (selectedLead.source || selectedLead.source_id) || null;
+                  const sourceObj = getSource(selectedLead.source_id) || (selectedLead.source && typeof selectedLead.source !== 'string' ? selectedLead.source : undefined);
+                  const sourceText: string | null = sourceObj ? `${(sourceObj as LeadSource).icon} ${(sourceObj as LeadSource).name}` : (typeof selectedLead.source === 'string' && selectedLead.source) ? selectedLead.source : (selectedLead.source_id ? String(selectedLead.source_id) : null);
                   return sourceText ? (
                     <Box>
                       <Text fontSize="sm" color="gray.500">Lead Source</Text>
