@@ -55,18 +55,43 @@ const normalizeHeader = (h: string) =>
 
 export const mapSheetRowToLead = (row: Record<string, string>) => {
   const mapped: Record<string, any> = {};
+  // temporary store for address parts
+  let postcode: string | undefined;
+
   for (const [rawKey, value] of Object.entries(row)) {
     const key = normalizeHeader(rawKey);
-    if (key.includes('name') && (key.includes('customer') || key === 'name')) mapped['customer_name'] = value;
-    else if (key.includes('phone')) mapped['customer_phone'] = value;
-    else if (key.includes('email')) mapped['customer_email'] = value;
-    else if (key.includes('location')) mapped['location'] = value;
-    else if (key === 'id' || key.endsWith('id')) mapped['id'] = value;
-    else if (key.includes('source')) mapped['source'] = value;
-    else if (key.includes('assigned')) mapped['assigned_to'] = value;
-    else if (key.includes('stage') || key.includes('status')) mapped['status'] = value;
-    else mapped[key] = value; // extra columns preserved
+    const val = value ?? '';
+
+    if (key.includes('name')) {
+      // any name-like column becomes customer_name (full_name, customer_name, name)
+      mapped['customer_name'] = mapped['customer_name'] || val;
+    } else if (key.includes('phone') || key.includes('mobile')) {
+      mapped['customer_phone'] = mapped['customer_phone'] || val;
+    } else if (key.includes('email')) {
+      mapped['customer_email'] = mapped['customer_email'] || val;
+    } else if (key.includes('address') || key.includes('street') || key.includes('location') || key.includes('place') || key.includes('area') || key.includes('city')) {
+      // aggregate address pieces into location
+      mapped['location'] = mapped['location'] ? `${mapped['location']}, ${val}` : val;
+    } else if (key.includes('post') || key.includes('pin') || key.includes('zip') || key.includes('pincode')) {
+      postcode = val;
+    } else if (key === 'id' || key.endsWith('_id')) {
+      mapped['id'] = val;
+    } else if (key.includes('source')) {
+      mapped['source'] = mapped['source'] || val;
+    } else if (key.includes('assigned')) {
+      mapped['assigned_to'] = mapped['assigned_to'] || val;
+    } else if (key.includes('stage') || key.includes('status') || key.includes('lead_status')) {
+      mapped['status'] = mapped['status'] || val;
+    } else {
+      mapped[key] = val; // extra columns preserved
+    }
   }
+
+  if (postcode) {
+    if (mapped['location']) mapped['location'] = `${mapped['location']}, ${postcode}`;
+    else mapped['location'] = postcode;
+  }
+
   return mapped;
 };
 
