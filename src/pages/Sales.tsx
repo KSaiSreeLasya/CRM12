@@ -304,6 +304,15 @@ const Sales: React.FC = () => {
         });
       } catch (err) {
         console.error('Sheet sync error', err);
+        try {
+          toast({
+            title: 'Sheet sync failed',
+            description: (err && (err as Error).message) || 'Failed to fetch Google Sheet. Make sure it is published and public.',
+            status: 'warning',
+            duration: 8000,
+            isClosable: true,
+          });
+        } catch (e) {}
       }
     };
 
