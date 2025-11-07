@@ -240,11 +240,16 @@ const Sales: React.FC = () => {
 
                     const keys = Object.keys(updatePayload);
                     if (keys.length > 0) {
-                      await supabase.from('leads').update(updatePayload).eq('id', existing.id);
+                      const { error } = await supabase.from('leads').update(updatePayload).eq('id', existing.id);
+                      if (error) {
+                        console.warn('Supabase update error for matched sheet lead', error);
+                        toast({ title: 'Sheet sync: failed to update lead', description: formatSupabaseError(error), status: 'warning', duration: 5000, isClosable: true });
+                      }
                     }
                   }
                 } catch (err) {
                   console.warn('Failed to update matched sheet lead to supabase', err);
+                  toast({ title: 'Sheet sync: unexpected error updating lead', description: String(err), status: 'error', duration: 5000, isClosable: true });
                 }
               })();
             } else {
