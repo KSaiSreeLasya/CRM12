@@ -775,14 +775,15 @@ const Sales: React.FC = () => {
                     </Tr>
                   </Thead>
                   <Tbody>
-                    {leads.map((lead) => {
+                    {leads.map((lead, __idx) => {
                       const person = getSalesPerson(lead.assigned_to);
                       const source = getSource(lead.source_id);
                       const pipeline = getPipeline(lead.id);
                       const stage = getStage(pipeline?.current_stage_id);
+                      const _key = lead.id || `${lead.customer_email || lead.customer_phone || 'lead'}-${__idx}`;
 
                       return (
-                        <Tr key={lead.id}>
+                        <Tr key={_key}>
                           <Td fontWeight="medium">{lead.customer_name}</Td>
                           <Td>{lead.customer_phone || '—'}</Td>
                           <Td>{lead.location || '—'}</Td>
