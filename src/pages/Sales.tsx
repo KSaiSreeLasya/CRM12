@@ -285,13 +285,16 @@ const Sales: React.FC = () => {
 
                     const { data, error } = await supabase.from('leads').insert([insertPayload]).select();
                     if (!error && data && data.length > 0) {
-                      // replace temporary lead with persisted row
                       const persisted = data[0];
                       newLeads[newLeads.findIndex((l) => l === newLead)] = persisted;
+                    } else if (error) {
+                      console.warn('Supabase insert error for sheet lead', error);
+                      toast({ title: 'Sheet sync: failed to save new lead', description: formatSupabaseError(error), status: 'warning', duration: 5000, isClosable: true });
                     }
                   }
                 } catch (err) {
                   console.warn('Failed to persist sheet lead to supabase', err);
+                  toast({ title: 'Sheet sync: unexpected error saving lead', description: String(err), status: 'error', duration: 5000, isClosable: true });
                 }
               })();
             }
