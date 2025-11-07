@@ -170,7 +170,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const initializeAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const resp = await supabase.auth.getSession();
+        const session = resp && resp.data ? resp.data.session : null;
         if (mounted) {
           await handleAuthChange(session);
         }
@@ -258,8 +259,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return true;
     } catch (error: any) {
-      const message = (error && (error as any).message) || String(error);
-      console.error('Login error:', message, error);
+      const supabaseError = error as any;
+      let message = (supabaseError && supabaseError.message) || String(error);
+
+      // Map common supabase auth errors to friendlier messages
+      if (supabaseError && (supabaseError.status === 400 || supabaseError.name === 'AuthApiError')) {
+        if (message && message.toLowerCase().includes('invalid login credentials')) {
+          message = 'Incorrect email or password. Please check your credentials and try again.';
+        }
+      }
+
+      console.error('Login error:', message);
+
       setIsAuthenticated(false);
       setIsAdmin(false);
       setIsFinance(false);
@@ -268,6 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setAssignedRegions([]);
       setAllowedModules([]);
       setRegionAccess({});
+
       toast({
         title: 'Login failed',
         description: message,
