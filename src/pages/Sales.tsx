@@ -685,8 +685,8 @@ const Sales: React.FC = () => {
                   <VStack spacing={3} align="stretch">
                     {leadsByStage[stage.id]?.map((lead, __idx) => {
                       const person = getSalesPerson(lead.assigned_to);
-                      const sourceObj = getSource(lead.source_id);
-                      const sourceText = sourceObj ? `${sourceObj.icon} ${sourceObj.name}` : (lead.source || lead.source_id) || null;
+                      const sourceObj = getSource(lead.source_id) || (lead.source && typeof lead.source !== 'string' ? lead.source : undefined);
+                      const sourceText: string | null = sourceObj ? `${(sourceObj as LeadSource).icon} ${(sourceObj as LeadSource).name}` : (typeof lead.source === 'string' && lead.source) ? lead.source : (lead.source_id ? String(lead.source_id) : null);
                       const _key = lead.id || `${lead.customer_email || lead.customer_phone || 'lead'}-${stage.id}-${__idx}`;
                       return (
                         <Card key={_key} size="sm" bg={cardBg} borderColor={borderColor} border="1px solid" cursor="pointer" _hover={{ shadow: 'md' }}>
