@@ -789,7 +789,8 @@ const Sales: React.FC = () => {
                   <Tbody>
                     {leads.map((lead, __idx) => {
                       const person = getSalesPerson(lead.assigned_to);
-                      const source = getSource(lead.source_id);
+                      const sourceObj = getSource(lead.source_id);
+                      const sourceText = sourceObj ? `${sourceObj.icon} ${sourceObj.name}` : (lead.source || lead.source_id) || '—';
                       const pipeline = getPipeline(lead.id);
                       const stage = getStage(pipeline?.current_stage_id);
                       const _key = lead.id || `${lead.customer_email || lead.customer_phone || 'lead'}-${__idx}`;
@@ -799,7 +800,7 @@ const Sales: React.FC = () => {
                           <Td fontWeight="medium">{lead.customer_name}</Td>
                           <Td>{lead.customer_phone || '—'}</Td>
                           <Td>{lead.location || '—'}</Td>
-                          <Td>{source ? `${source.icon} ${source.name}` : '—'}</Td>
+                          <Td>{sourceText}</Td>
                           <Td>{person ? person.name : <Badge colorScheme="orange">Unassigned</Badge>}</Td>
                           <Td>{stage ? <Badge colorScheme="green">{stage.name}</Badge> : '—'}</Td>
                           <Td>
