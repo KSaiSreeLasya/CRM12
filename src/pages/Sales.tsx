@@ -672,11 +672,12 @@ const Sales: React.FC = () => {
                     {stage.name}
                   </Heading>
                   <VStack spacing={3} align="stretch">
-                    {leadsByStage[stage.id]?.map((lead) => {
+                    {leadsByStage[stage.id]?.map((lead, __idx) => {
                       const person = getSalesPerson(lead.assigned_to);
                       const source = getSource(lead.source_id);
+                      const _key = lead.id || `${lead.customer_email || lead.customer_phone || 'lead'}-${stage.id}-${__idx}`;
                       return (
-                        <Card key={lead.id} size="sm" bg={cardBg} borderColor={borderColor} border="1px solid" cursor="pointer" _hover={{ shadow: 'md' }}>
+                        <Card key={_key} size="sm" bg={cardBg} borderColor={borderColor} border="1px solid" cursor="pointer" _hover={{ shadow: 'md' }}>
                           <CardBody>
                             <VStack align="start" spacing={2}>
                               <Heading size="xs">{lead.customer_name}</Heading>
