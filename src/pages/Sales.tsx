@@ -192,25 +192,40 @@ const Sales: React.FC = () => {
         const sheetLeads = await fetchGoogleSheetLeads(sheetUrl);
         if (!mounted || !sheetLeads || sheetLeads.length === 0) return;
 
-        // Merge logic: prefer id match, then email, then phone
+        // Merge logic: prefer id match, then email, then phone, then normalized name
         setLeads((current) => {
           const byId = new Map<string, any>();
           const byEmail = new Map<string, any>();
           const byPhone = new Map<string, any>();
+          const byName = new Map<string, any>();
+
+          const normalizeName = (n: any) => (String(n || '').trim().toLowerCase().replace(/\s+/g, ' '));
 
           current.forEach((l) => {
             if (l.id) byId.set(String(l.id), l);
             if (l.customer_email) byEmail.set(String(l.customer_email).toLowerCase(), l);
             if (l.customer_phone) byPhone.set(String(l.customer_phone), l);
+            if (l.customer_name) byName.set(normalizeName(l.customer_name), l);
           });
 
           const newLeads = [...current];
 
+          let skipped = 0;
+
           (sheetLeads as any[]).forEach((s) => {
             // normalize keys to expected
             const email = (s.customer_email || s.email || '').toLowerCase();
-            const phone = s.customer_phone || s.phone || '';
+            const phone = (s.customer_phone || s.phone || '')
+              ? String(s.customer_phone || s.phone).trim()
+              : '';
             const sid = s.id ? String(s.id) : null;
+            const nameNorm = normalizeName(s.customer_name || s.name || '');
+
+            // skip rows that have no meaningful identifying fields
+            if (!sid && !email && !phone && !nameNorm) {
+              skipped += 1;
+              return;
+            }
 
             let existing = null;
             if (sid && byId.has(sid)) {
@@ -219,6 +234,8 @@ const Sales: React.FC = () => {
               existing = byEmail.get(email);
             } else if (phone && byPhone.has(phone)) {
               existing = byPhone.get(phone);
+            } else if (nameNorm && byName.has(nameNorm)) {
+              existing = byName.get(nameNorm);
             }
 
             if (existing) {
@@ -269,6 +286,9 @@ const Sales: React.FC = () => {
 
               newLeads.unshift(newLead);
 
+              // add to name map to avoid duplicate insert from same batch
+              if (newLead.customer_name) byName.set(normalizeName(newLead.customer_name), newLead);
+
               // Attempt to insert into Supabase, but don't block UI
               (async () => {
                 try {
@@ -285,8 +305,14 @@ const Sales: React.FC = () => {
 
                     const { data, error } = await supabase.from('leads').insert([insertPayload]).select();
                     if (!error && data && data.length > 0) {
+                      // replace temporary lead with persisted row
                       const persisted = data[0];
                       newLeads[newLeads.findIndex((l) => l === newLead)] = persisted;
+                      // also update maps
+                      if (persisted.id) byId.set(String(persisted.id), persisted);
+                      if (persisted.customer_email) byEmail.set(String(persisted.customer_email).toLowerCase(), persisted);
+                      if (persisted.customer_phone) byPhone.set(String(persisted.customer_phone), persisted);
+                      if (persisted.customer_name) byName.set(normalizeName(persisted.customer_name), persisted);
                     } else if (error) {
                       console.warn('Supabase insert error for sheet lead', error);
                       toast({ title: 'Sheet sync: failed to save new lead', description: formatSupabaseError(error), status: 'warning', duration: 5000, isClosable: true });
@@ -299,6 +325,8 @@ const Sales: React.FC = () => {
               })();
             }
           });
+
+          if (skipped > 0) console.debug(`Sheet sync skipped ${skipped} empty rows`);
 
           return newLeads;
         });
