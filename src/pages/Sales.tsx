@@ -307,7 +307,7 @@ const Sales: React.FC = () => {
         try {
           toast({
             title: 'Sheet sync failed',
-            description: (err && (err as Error).message) || 'Failed to fetch Google Sheet. Make sure it is published and public.',
+            description: String((err && (err as Error).message) || 'Failed to fetch Google Sheet. Make sure it is published and public.'),
             status: 'warning',
             duration: 8000,
             isClosable: true,
