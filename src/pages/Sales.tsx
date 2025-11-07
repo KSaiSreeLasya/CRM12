@@ -180,6 +180,125 @@ const Sales: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
+  // Google Sheet sync: periodically fetch public sheet and merge into leads list
+  useEffect(() => {
+    let mounted = true;
+    let intervalId: any = null;
+    const sheetUrl = 'https://docs.google.com/spreadsheets/d/1QY8_Q8-ybLKNVs4hynPZslZDwUfC-PIJrViJfL0-tpM/edit?usp=sharing';
+
+    const doSync = async () => {
+      try {
+        const { fetchGoogleSheetLeads } = await import('../utils/sheetSync');
+        const sheetLeads = await fetchGoogleSheetLeads(sheetUrl);
+        if (!mounted || !sheetLeads || sheetLeads.length === 0) return;
+
+        // Merge logic: prefer id match, then email, then phone
+        setLeads((current) => {
+          const byId = new Map<string, any>();
+          const byEmail = new Map<string, any>();
+          const byPhone = new Map<string, any>();
+
+          current.forEach((l) => {
+            if (l.id) byId.set(String(l.id), l);
+            if (l.customer_email) byEmail.set(String(l.customer_email).toLowerCase(), l);
+            if (l.customer_phone) byPhone.set(String(l.customer_phone), l);
+          });
+
+          const newLeads = [...current];
+
+          (sheetLeads as any[]).forEach((s) => {
+            // normalize keys to expected
+            const email = (s.customer_email || s.email || '').toLowerCase();
+            const phone = s.customer_phone || s.phone || '';
+            const sid = s.id ? String(s.id) : null;
+
+            let existing = null;
+            if (sid && byId.has(sid)) {
+              existing = byId.get(sid);
+            } else if (email && byEmail.has(email)) {
+              existing = byEmail.get(email);
+            } else if (phone && byPhone.has(phone)) {
+              existing = byPhone.get(phone);
+            }
+
+            if (existing) {
+              // update existing in place
+              Object.assign(existing, s);
+            } else {
+              // new lead: create minimal Lead object
+              const newLead: any = {
+                id: s.id || undefined,
+                customer_name: s.customer_name || s.name || '',
+                customer_phone: s.customer_phone || s.phone || '',
+                customer_email: s.customer_email || s.email || '',
+                location: s.location || '',
+                source_id: s.source || s.source_id || null,
+                assigned_to: s.assigned_to || null,
+                status: s.status || 'new',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                // preserve any extra fields
+                external: (() => {
+                  const extras: Record<string, any> = {};
+                  for (const k of Object.keys(s)) {
+                    if (!['id','customer_name','name','customer_phone','phone','customer_email','email','location','source','source_id','assigned_to','status','created_at','updated_at'].includes(k)) {
+                      extras[k] = s[k];
+                    }
+                  }
+                  return Object.keys(extras).length ? extras : undefined;
+                })(),
+              };
+
+              newLeads.unshift(newLead);
+
+              // Attempt to insert into Supabase, but don't block UI
+              (async () => {
+                try {
+                  if (isSupabaseConfigured) {
+                    const insertPayload: any = {
+                      customer_name: newLead.customer_name,
+                      customer_phone: newLead.customer_phone,
+                      customer_email: newLead.customer_email,
+                      location: newLead.location,
+                      source_id: newLead.source_id,
+                      assigned_to: newLead.assigned_to,
+                      status: newLead.status,
+                    };
+                    // include external as json if table supports it
+                    if (newLead.external) insertPayload.external = newLead.external;
+
+                    const { data, error } = await supabase.from('leads').insert([insertPayload]).select();
+                    if (!error && data && data.length > 0) {
+                      // replace temporary lead with persisted row
+                      const persisted = data[0];
+                      newLeads[ newLeads.findIndex((l) => l === newLead) ] = persisted;
+                    }
+                  }
+                } catch (err) {
+                  console.warn('Failed to persist sheet lead to supabase', err);
+                }
+              })();
+            }
+          });
+
+          return newLeads;
+        });
+      } catch (err) {
+        console.error('Sheet sync error', err);
+      }
+    };
+
+    // initial sync after a short delay to let fetchData populate current leads
+    const initTimeout = setTimeout(() => doSync(), 3000);
+    intervalId = setInterval(() => doSync(), 60 * 1000);
+
+    return () => {
+      mounted = false;
+      clearInterval(intervalId);
+      clearTimeout(initTimeout);
+    };
+  }, [setLeads]);
+
   const handleAddLead = async () => {
     if (!newLeadData.customer_name.trim()) {
       toast({ title: 'Please enter customer name', status: 'warning' });
