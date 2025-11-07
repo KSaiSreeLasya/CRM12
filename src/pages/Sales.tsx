@@ -1226,11 +1226,12 @@ const Sales: React.FC = () => {
                   <Text fontWeight="medium">{selectedLead.location || '—'}</Text>
                 </Box>
                 {(() => {
-                  const source = getSource(selectedLead.source_id);
-                  return source ? (
+                  const sourceObj = getSource(selectedLead.source_id);
+                  const sourceText = sourceObj ? `${sourceObj.icon} ${sourceObj.name}` : (selectedLead.source || selectedLead.source_id) || null;
+                  return sourceText ? (
                     <Box>
                       <Text fontSize="sm" color="gray.500">Lead Source</Text>
-                      <Text fontWeight="medium">{source.icon} {source.name}</Text>
+                      <Text fontWeight="medium">{sourceText}</Text>
                     </Box>
                   ) : null;
                 })()}
