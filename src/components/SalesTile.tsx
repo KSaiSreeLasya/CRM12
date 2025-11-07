@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  Badge,
   Box,
   Button,
   Flex,
@@ -8,35 +7,8 @@ import {
   HStack,
   LinkBox,
   LinkOverlay,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-  SimpleGrid,
-  Spinner,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-  useDisclosure,
   useToast,
-  VStack,
-  Card,
-  CardBody,
-  CardHeader,
   Text,
-  Avatar,
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
@@ -103,7 +75,6 @@ const SalesTile: React.FC<SalesTileProps> = ({
   accentColor,
   onNavigateToFull,
 }) => {
-  const { isOpen, onOpen, onClose } = useDisclosure();
   const toast = useToast();
   const navigate = useNavigate();
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -259,278 +230,11 @@ const SalesTile: React.FC<SalesTileProps> = ({
         </Flex>
 
         <Box mt={3}>
-          <LinkOverlay as="button" onClick={onOpen} color={accentColor}>
+          <LinkOverlay as="button" onClick={() => onNavigateToFull()} color={accentColor}>
             Open
           </LinkOverlay>
         </Box>
       </LinkBox>
-
-      <Modal isOpen={isOpen} onClose={onClose} size="full">
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>
-            <Flex justify="space-between" align="center" gap={4}>
-              <HStack spacing={3} align="center">
-                <Button variant="ghost" onClick={onClose}>
-                  Back
-                </Button>
-                <Box>
-                  <Heading size="md" color="gray.800">
-                    Sales Pipeline
-                  </Heading>
-                  <Text fontSize="sm" color="gray.500">
-                    Manage leads, pipeline stages, and sales persons
-                  </Text>
-                </Box>
-              </HStack>
-              <Button colorScheme="green" onClick={onNavigateToFull}>
-                Go to Sales Page
-              </Button>
-            </Flex>
-          </ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <Tabs>
-              <TabList>
-                <Tab>Overview</Tab>
-                <Tab>Recent Leads</Tab>
-                <Tab>Pipeline</Tab>
-                <Tab>Sales Team</Tab>
-              </TabList>
-
-              <TabPanels>
-                {/* Overview */}
-                <TabPanel>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={6}>
-                    <Card bg={cardBg}>
-                      <CardBody>
-                        <Text fontSize="sm" color={titleColor}>
-                          Total Leads
-                        </Text>
-                        <Heading size="lg" color="green.600">
-                          {summary.total}
-                        </Heading>
-                      </CardBody>
-                    </Card>
-                    <Card bg={cardBg}>
-                      <CardBody>
-                        <Text fontSize="sm" color={titleColor}>
-                          Assigned
-                        </Text>
-                        <Heading size="lg" color="blue.600">
-                          {summary.assigned}
-                        </Heading>
-                      </CardBody>
-                    </Card>
-                    <Card bg={cardBg}>
-                      <CardBody>
-                        <Text fontSize="sm" color={titleColor}>
-                          Unassigned
-                        </Text>
-                        <Heading size="lg" color="orange.600">
-                          {summary.unassigned}
-                        </Heading>
-                      </CardBody>
-                    </Card>
-                    <Card bg={cardBg}>
-                      <CardBody>
-                        <Text fontSize="sm" color={titleColor}>
-                          Sales Persons
-                        </Text>
-                        <Heading size="lg" color="purple.600">
-                          {summary.salesPersons}
-                        </Heading>
-                      </CardBody>
-                    </Card>
-                  </SimpleGrid>
-
-                  <Text fontSize="sm" color={titleColor} mb={4} fontWeight="semibold">
-                    Leads by Pipeline Stage
-                  </Text>
-                  <SimpleGrid columns={{ base: 2, md: 4 }} spacing={3}>
-                    {stages.map((stage) => (
-                      <Card key={stage.id} bg={cardBg} border="1px solid" borderColor={borderColor}>
-                        <CardBody>
-                          <Text fontSize="xs" color={titleColor}>
-                            {stage.name}
-                          </Text>
-                          <Heading size="sm" color="green.600">
-                            {summary.byStage[stage.id] || 0}
-                          </Heading>
-                        </CardBody>
-                      </Card>
-                    ))}
-                  </SimpleGrid>
-                </TabPanel>
-
-                {/* Recent Leads */}
-                <TabPanel>
-                  {loading ? (
-                    <Flex justify="center" p={6}>
-                      <Spinner />
-                    </Flex>
-                  ) : (
-                    <TableContainer border="1px solid" borderColor={borderColor} borderRadius="lg">
-                      <Table variant="simple" size="sm">
-                        <Thead bg="gray.50">
-                          <Tr>
-                            <Th>Customer Name</Th>
-                            <Th>Phone</Th>
-                            <Th>Source</Th>
-                            <Th>Assigned To</Th>
-                            <Th>Stage</Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {recentLeads.length === 0 ? (
-                            <Tr>
-                              <Td colSpan={5}>
-                                <Text textAlign="center" color="gray.500" py={6}>
-                                  No leads available.
-                                </Text>
-                              </Td>
-                            </Tr>
-                          ) : (
-                            recentLeads.map((lead) => {
-                              const person = getSalesPerson(lead.assigned_to);
-                              const source = getSource(lead.source_id);
-                              const pipeline = getPipeline(lead.id);
-                              const stage = getStage(pipeline?.current_stage_id);
-
-                              return (
-                                <Tr key={lead.id}>
-                                  <Td fontWeight="medium">{lead.customer_name}</Td>
-                                  <Td fontSize="sm">{lead.customer_phone || '—'}</Td>
-                                  <Td fontSize="sm">{source ? `${source.icon} ${source.name}` : '—'}</Td>
-                                  <Td fontSize="sm">
-                                    {person ? (
-                                      <HStack spacing={2}>
-                                        <Avatar size="xs" name={person.name} />
-                                        <Text>{person.name}</Text>
-                                      </HStack>
-                                    ) : (
-                                      <Badge colorScheme="orange">Unassigned</Badge>
-                                    )}
-                                  </Td>
-                                  <Td>
-                                    <Badge colorScheme="green">{stage?.name || '—'}</Badge>
-                                  </Td>
-                                </Tr>
-                              );
-                            })
-                          )}
-                        </Tbody>
-                      </Table>
-                    </TableContainer>
-                  )}
-                </TabPanel>
-
-                {/* Pipeline */}
-                <TabPanel>
-                  <SimpleGrid columns={{ base: 1, md: 2, lg: stages.length > 4 ? 4 : stages.length }} spacing={4}>
-                    {stages.map((stage) => (
-                      <Box key={stage.id} bg={cardBg} border="1px solid" borderColor={borderColor} borderRadius="lg" p={4}>
-                        <Heading size="sm" color="green.600" mb={3}>
-                          {stage.name}
-                        </Heading>
-                        <VStack spacing={2} align="stretch">
-                          {(leadsByStage[stage.id] || []).slice(0, 3).map((lead) => {
-                            const person = getSalesPerson(lead.assigned_to);
-                            return (
-                              <Card key={lead.id} size="sm" bg={cardBg} borderColor={borderColor} border="1px solid">
-                                <CardBody>
-                                  <VStack align="start" spacing={1}>
-                                    <Heading size="xs">{lead.customer_name}</Heading>
-                                    {person ? (
-                                      <HStack spacing={2} fontSize="xs">
-                                        <Avatar size="xs" name={person.name} />
-                                        <Text>{person.name}</Text>
-                                      </HStack>
-                                    ) : (
-                                      <Text fontSize="xs" color="orange.600">
-                                        Unassigned
-                                      </Text>
-                                    )}
-                                  </VStack>
-                                </CardBody>
-                              </Card>
-                            );
-                          })}
-                          {(leadsByStage[stage.id]?.length || 0) > 3 && (
-                            <Text fontSize="xs" color="gray.500" textAlign="center">
-                              +{(leadsByStage[stage.id]?.length || 0) - 3} more
-                            </Text>
-                          )}
-                          {(!leadsByStage[stage.id] || leadsByStage[stage.id].length === 0) && (
-                            <Text fontSize="xs" color="gray.400" textAlign="center">
-                              No leads
-                            </Text>
-                          )}
-                        </VStack>
-                      </Box>
-                    ))}
-                  </SimpleGrid>
-                </TabPanel>
-
-                {/* Sales Team */}
-                <TabPanel>
-                  <TableContainer border="1px solid" borderColor={borderColor} borderRadius="lg">
-                    <Table variant="simple" size="sm">
-                      <Thead bg="gray.50">
-                        <Tr>
-                          <Th>Name</Th>
-                          <Th>Email</Th>
-                          <Th>Phone</Th>
-                          <Th>Leads Assigned</Th>
-                          <Th>Status</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {salesPersons.length === 0 ? (
-                          <Tr>
-                            <Td colSpan={5}>
-                              <Text textAlign="center" color="gray.500" py={6}>
-                                No sales persons added yet.
-                              </Text>
-                            </Td>
-                          </Tr>
-                        ) : (
-                          salesPersons.map((person) => {
-                            const assignedLeads = leads.filter((l) => l.assigned_to === person.id);
-                            return (
-                              <Tr key={person.id}>
-                                <Td fontWeight="medium">{person.name}</Td>
-                                <Td fontSize="sm">{person.email || '—'}</Td>
-                                <Td fontSize="sm">{person.phone || '—'}</Td>
-                                <Td fontSize="sm" fontWeight="medium">
-                                  {assignedLeads.length}
-                                </Td>
-                                <Td>
-                                  <Badge colorScheme={person.status === 'active' ? 'green' : 'red'}>
-                                    {person.status}
-                                  </Badge>
-                                </Td>
-                              </Tr>
-                            );
-                          })
-                        )}
-                      </Tbody>
-                    </Table>
-                  </TableContainer>
-                </TabPanel>
-              </TabPanels>
-            </Tabs>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onClose}>
-              Close
-            </Button>
-            <Button colorScheme="green" onClick={onNavigateToFull}>
-              Go to Sales Page
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
     </>
   );
 };
