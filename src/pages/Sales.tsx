@@ -113,6 +113,7 @@ const Sales: React.FC = () => {
   const { isOpen: isAddLeadOpen, onOpen: onAddLeadOpen, onClose: onAddLeadClose } = useDisclosure();
   const { isOpen: isAddPersonOpen, onOpen: onAddPersonOpen, onClose: onAddPersonClose } = useDisclosure();
   const { isOpen: isDetailsOpen, onOpen: onDetailsOpen, onClose: onDetailsClose } = useDisclosure();
+  const { isOpen: isDashboardOpen, onOpen: onDashboardOpen, onClose: onDashboardClose } = useDisclosure();
 
   const [leads, setLeads] = useState<Lead[]>([]);
   const [salesPersons, setSalesPersons] = useState<SalesPerson[]>([]);
@@ -432,14 +433,102 @@ const Sales: React.FC = () => {
       </SimpleGrid>
 
       {/* Action Buttons */}
-      <Flex gap={3} mb={6}>
+      <Flex gap={3} mb={6} align="center">
         <Button leftIcon={<AddIcon />} colorScheme="green" onClick={onAddLeadOpen}>
           Add Lead
         </Button>
         <Button leftIcon={<AddIcon />} colorScheme="purple" variant="outline" onClick={onAddPersonOpen}>
           Add Sales Person
         </Button>
+        <Button ml="auto" colorScheme="green" variant="ghost" onClick={onDashboardOpen}>
+          Sales Dashboard
+        </Button>
       </Flex>
+
+      {/* Dashboard Modal */}
+      <Modal isOpen={isDashboardOpen} onClose={onDashboardClose} size="xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>
+            <Heading size="md" bgGradient="linear(to-r, green.400, blue.400)" bgClip="text">Sales Dashboard</Heading>
+            <Text fontSize="sm" color="gray.500">Quick overview of pipeline health and recent activity</Text>
+          </ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} spacing={4} mb={4}>
+              <Card bg="linear-gradient(135deg,#e6fffa,#f0fff4)">
+                <CardBody>
+                  <Text fontSize="sm" color={titleColor}>Total Leads</Text>
+                  <Heading size="lg" color="green.600">{summaryStats.total}</Heading>
+                </CardBody>
+              </Card>
+              <Card bg="linear-gradient(135deg,#ebf8ff,#f0f9ff)">
+                <CardBody>
+                  <Text fontSize="sm" color={titleColor}>Assigned</Text>
+                  <Heading size="lg" color="blue.600">{summaryStats.assigned}</Heading>
+                </CardBody>
+              </Card>
+              <Card bg="linear-gradient(135deg,#fff7ed,#fff8ef)">
+                <CardBody>
+                  <Text fontSize="sm" color={titleColor}>Unassigned</Text>
+                  <Heading size="lg" color="orange.600">{summaryStats.unassigned}</Heading>
+                </CardBody>
+              </Card>
+              <Card bg="linear-gradient(135deg,#f5f3ff,#faf5ff)">
+                <CardBody>
+                  <Text fontSize="sm" color={titleColor}>Sales Persons</Text>
+                  <Heading size="lg" color="purple.600">{summaryStats.salesPersons}</Heading>
+                </CardBody>
+              </Card>
+            </SimpleGrid>
+
+            <Text fontSize="sm" fontWeight="semibold" mb={2}>Leads by Stage</Text>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} mb={4}>
+              {stages.map((stage) => (
+                <Box key={stage.id} p={3} borderRadius="md" bg={stage.color || 'gray.50'} color="white">
+                  <Flex justify="space-between" align="center">
+                    <Text fontWeight="semibold">{stage.name}</Text>
+                    <Badge bg="rgba(255,255,255,0.2)">{(leadsByStage[stage.id] || []).length}</Badge>
+                  </Flex>
+                </Box>
+              ))}
+            </SimpleGrid>
+
+            <Text fontSize="sm" fontWeight="semibold" mb={2}>Recent Leads</Text>
+            {loading ? (
+              <Flex justify="center" p={6}><Spinner /></Flex>
+            ) : (
+              <TableContainer border="1px solid" borderColor={borderColor} borderRadius="lg">
+                <Table variant="simple" size="sm">
+                  <Thead bg="gray.50">
+                    <Tr>
+                      <Th>Customer</Th>
+                      <Th>Phone</Th>
+                      <Th>Stage</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {leads.slice(0,6).map((lead) => {
+                      const pipeline = getPipeline(lead.id);
+                      const stage = getStage(pipeline?.current_stage_id);
+                      return (
+                        <Tr key={lead.id}>
+                          <Td fontWeight="medium">{lead.customer_name}</Td>
+                          <Td>{lead.customer_phone || '—'}</Td>
+                          <Td>{stage ? <Badge colorScheme="green">{stage.name}</Badge> : '—'}</Td>
+                        </Tr>
+                      );
+                    })}
+                  </Tbody>
+                </Table>
+              </TableContainer>
+            )}
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onDashboardClose}>Close</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Tabs for different views */}
       <Tabs isLazy>
